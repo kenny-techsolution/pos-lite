@@ -74,15 +74,17 @@ jobs:
       - name: Push event to dashboard (Cloudflare Worker)
         # Sub-5s real-time path: append the event directly to the public
         # dashboard's R2 bucket via the Worker's POST /events endpoint.
-        # Skips silently if CF_WORKER_URL or CF_WRITE_TOKEN aren't configured.
+        # Skips silently if CF_WRITE_TOKEN isn't configured.
+        # NOTE: the Worker URL is public (it's referenced in the dashboard's HTML),
+        # so it's hardcoded here. Only CF_WRITE_TOKEN is a secret.
         if: success()
         env:
-          CF_WORKER_URL: ${{ secrets.CF_WORKER_URL }}
+          CF_WORKER_URL: "https://ai-review-events.kenny-techsolution.workers.dev"
           CF_WRITE_TOKEN: ${{ secrets.CF_WRITE_TOKEN }}
         run: |
-          set -euo pipefail
-          if [ -z "${CF_WORKER_URL:-}" ] || [ -z "${CF_WRITE_TOKEN:-}" ]; then
-            echo "CF_WORKER_URL or CF_WRITE_TOKEN not set — skipping dashboard push (artifact upload still runs)."
+          set -uo pipefail   # NB: no -e, we want curl failures to be soft
+          if [ -z "${CF_WRITE_TOKEN:-}" ]; then
+            echo "CF_WRITE_TOKEN not set — skipping dashboard push (artifact upload still runs)."
             exit 0
           fi
           EVENT_FILE="reviewer/artifacts/events.jsonl"
@@ -96,10 +98,10 @@ jobs:
             -X POST "${CF_WORKER_URL}/events" \
             -H "Authorization: Bearer ${CF_WRITE_TOKEN}" \
             -H "Content-Type: application/x-ndjson" \
-            --data-binary @"${EVENT_FILE}")
+            --data-binary @"${EVENT_FILE}" || echo "000")
           if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-            echo "::warning::Dashboard push returned HTTP ${HTTP_CODE}: $(cat /tmp/cf-response.txt)"
-            exit 0  # don't fail the run on a downstream blip — backstop will catch
+            echo "::warning::Dashboard push returned HTTP ${HTTP_CODE}: $(cat /tmp/cf-response.txt 2>/dev/null || true)"
+            exit 0  # don't fail the run on a downstream blip — artifact upload is the backstop
           fi
           echo "Dashboard updated · response: $(cat /tmp/cf-response.txt)"
 
