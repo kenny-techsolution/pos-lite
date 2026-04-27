@@ -37,11 +37,22 @@ jobs:
         run: npm ci
         working-directory: reviewer
 
+      - name: Mint GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.REVIEWER_APP_ID }}
+          private-key: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
+        # Required: default GITHUB_TOKEN cannot use event:APPROVE per GitHub policy.
+        # The App-issued installation token bypasses that limitation, so the
+        # reviewer can post real APPROVED reviews on T0/T1 PRs from the bot identity.
+
       - name: Run AI reviewer
         env:
-          # GITHUB_TOKEN is auto-injected by Actions with pull-requests: write scope per the
-          # `permissions:` block above. The reviewer uses it to read PR files and post the review.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Override the default GITHUB_TOKEN with the App's installation token —
+          # short-lived (1h), scoped to pos-lite, identity = ai-pr-reviewer-kc[bot].
+          # This is what enables event:APPROVE to succeed.
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           # LLM provider — set ONE of these. The reviewer auto-detects.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
