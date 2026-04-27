@@ -1,3 +1,3 @@
-module github.com/spoton/spoton-lite
+module github.com/kenny-techsolution/pos-lite
 
 go 1.22

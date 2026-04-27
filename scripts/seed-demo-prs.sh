@@ -8,7 +8,7 @@
 # Prerequisites:
 #   - You're on the `main` branch with a clean working tree.
 #   - `gh` CLI authenticated (`gh auth status`).
-#   - Origin remote points at your GitHub fork of spoton-lite.
+#   - Origin remote points at your GitHub fork of pos-lite.
 
 set -euo pipefail
 

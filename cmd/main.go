@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/spoton/spoton-lite/api/auth"
-	"github.com/spoton/spoton-lite/api/orders"
-	"github.com/spoton/spoton-lite/api/payments"
+	"github.com/kenny-techsolution/pos-lite/api/auth"
+	"github.com/kenny-techsolution/pos-lite/api/orders"
+	"github.com/kenny-techsolution/pos-lite/api/payments"
 )
 
 func main() {
@@ -17,7 +17,7 @@ func main() {
 	mux.HandleFunc("POST /api/auth/login", auth.HandleLogin)
 	mux.HandleFunc("POST /api/orders", orders.HandleCreateOrder)
 
-	log.Println("spoton-lite listening on :8080")
+	log.Println("pos-lite listening on :8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatal(err)
 	}

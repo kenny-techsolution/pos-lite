@@ -21,7 +21,7 @@ jobs:
       - name: Checkout reviewer code
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/spoton-ai-reviewer
+          repository: ${{ github.repository_owner }}/ai-pr-reviewer
           path: reviewer
           # Production: use a deploy key or GitHub App token. Demo: same-org public read.
           token: ${{ secrets.REVIEWER_REPO_TOKEN || secrets.GITHUB_TOKEN }}
@@ -42,8 +42,15 @@ jobs:
           # GITHUB_TOKEN is auto-injected by Actions with pull-requests: write scope per the
           # `permissions:` block above. The reviewer uses it to read PR files and post the review.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Anthropic API key for Haiku classifier + Sonnet/Opus specialists.
+          # LLM provider — set ONE of these. The reviewer auto-detects.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # Optional: explicit provider selection (anthropic | openrouter)
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+          # Optional: per-role model overrides (forces OpenRouter when set)
+          MODEL_CLASSIFIER: ${{ vars.MODEL_CLASSIFIER }}
+          MODEL_AGENT: ${{ vars.MODEL_AGENT }}
+          MODEL_AGENT_OPUS: ${{ vars.MODEL_AGENT_OPUS }}
           # Optional: incoming webhook URL for T3 / T4 escalation. Reviewer skips Slack if absent.
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: npm run review

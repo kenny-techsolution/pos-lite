@@ -1,46 +1,56 @@
-# spoton-lite CODEOWNERS — drives both real merge gating AND audit-team auto-watch.
-# AI Reviewer's path-based signal layer reads from this file.
+# pos-lite CODEOWNERS — drives merge gating + audit-team auto-watch.
+# The AI Reviewer's path-based signal layer reads its own rule set internally;
+# this file controls GitHub's structural enforcement (branch protection).
 #
-# Format reminder (GitHub):
-#   <pattern>  <owner1> <owner2> ...
+# Format reminder (GitHub): <pattern>  <owner1> <owner2> ...
+# Branch-protection rules require approvals from listed CODEOWNERS for
+# matching paths. The audit role is added as a parallel observer — its
+# review request fires automatically but isn't required to merge.
 #
-# Branch-protection rules require N approvals from CODEOWNERS for matching paths.
-# Audit team is added as a parallel observer — non-required, just notified.
+# Demo note: the @<team>/* placeholders below illustrate the production
+# shape (org/team-scoped CODEOWNERS). For the live demo, @kenny-techsolution
+# is added on protected paths so branch protection has a real owner to
+# require an approval from.
 
 # ---------- Tier 3 paths (PCI / payments / auth / KYC / crypto) ----------
 # Real owners gate merge:
-/api/payments/**         @spoton/payments-team @spoton/security-leads
-/api/auth/**             @spoton/security-team
-/api/kyc/**              @spoton/compliance-team
-/api/crypto/**           @spoton/security-team
+/api/payments/**         @kenny-techsolution
+/api/auth/**             @kenny-techsolution
+/api/kyc/**              @kenny-techsolution
+/api/crypto/**           @kenny-techsolution
 
-# Audit team auto-watch (parallel · observer · non-required):
-/api/payments/**         @spoton/security-audit
-/api/auth/**             @spoton/security-audit
-/api/kyc/**              @spoton/security-audit
-/api/crypto/**           @spoton/security-audit
+# In production these would map to org-scoped teams, illustrative below:
+#   /api/payments/**     @<org>/payments-team @<org>/security-leads
+#   /api/auth/**         @<org>/security-team
+#   /api/kyc/**          @<org>/compliance-team
+#   /api/crypto/**       @<org>/security-team
+
+# Audit role auto-watch (parallel · observer · non-required in production setup):
+#   /api/payments/**     @<org>/security-audit
+#   /api/auth/**         @<org>/security-audit
+#   /api/kyc/**          @<org>/security-audit
+#   /api/crypto/**       @<org>/security-audit
 
 # ---------- Tier 4 paths (migrations on payment tables · IAM · CI) ----------
-/migrations/**           @spoton/payments-team @spoton/security-leads @spoton/sre
-/.github/workflows/**    @spoton/sre @spoton/security-leads
-/infra/iam/**            @spoton/security-leads @spoton/sre
+/migrations/**           @kenny-techsolution
+/.github/workflows/**    @kenny-techsolution
+/infra/iam/**            @kenny-techsolution
 
 # ---------- Tier 2 paths (business logic · non-PCI backend) ----------
-/api/orders/**           @spoton/backend-team
-/api/notifications/**    @spoton/backend-team
-/api/users/**            @spoton/backend-team
-/api/inventory/**        @spoton/backend-team
-/api/menu/**             @spoton/backend-team
-/api/reporting/**        @spoton/backend-team
-/api/reports/**          @spoton/backend-team
+# In production: @<org>/backend-team would gate; left unowned in the demo
+# so the reviewer's COMMENT-tier behavior is what showcases T2 handling.
+# /api/orders/**         @<org>/backend-team
+# /api/notifications/**  @<org>/backend-team
+# /api/users/**          @<org>/backend-team
+# /api/inventory/**      @<org>/backend-team
+# /api/menu/**           @<org>/backend-team
+# /api/reporting/**      @<org>/backend-team
+# /api/reports/**        @<org>/backend-team
 
 # ---------- Tier 1 paths (frontend · non-payment UI) ----------
-/web/src/components/**   @spoton/frontend-team
-/web/src/pages/**        @spoton/frontend-team
-/web/src/hooks/**        @spoton/frontend-team
+# /web/src/components/** @<org>/frontend-team
+# /web/src/pages/**      @<org>/frontend-team
+# /web/src/hooks/**      @<org>/frontend-team
 
 # ---------- Tier 0 paths (docs · tests · styles) ----------
-# (no required reviewer · falls through to repo default)
-/docs/**
-/web/src/styles/**
-**/*_test.go
+# (intentionally no required reviewer — falls through to repo default)
