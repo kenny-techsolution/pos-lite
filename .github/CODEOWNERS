@@ -1,0 +1,46 @@
+# spoton-lite CODEOWNERS — drives both real merge gating AND audit-team auto-watch.
+# AI Reviewer's path-based signal layer reads from this file.
+#
+# Format reminder (GitHub):
+#   <pattern>  <owner1> <owner2> ...
+#
+# Branch-protection rules require N approvals from CODEOWNERS for matching paths.
+# Audit team is added as a parallel observer — non-required, just notified.
+
+# ---------- Tier 3 paths (PCI / payments / auth / KYC / crypto) ----------
+# Real owners gate merge:
+/api/payments/**         @spoton/payments-team @spoton/security-leads
+/api/auth/**             @spoton/security-team
+/api/kyc/**              @spoton/compliance-team
+/api/crypto/**           @spoton/security-team
+
+# Audit team auto-watch (parallel · observer · non-required):
+/api/payments/**         @spoton/security-audit
+/api/auth/**             @spoton/security-audit
+/api/kyc/**              @spoton/security-audit
+/api/crypto/**           @spoton/security-audit
+
+# ---------- Tier 4 paths (migrations on payment tables · IAM · CI) ----------
+/migrations/**           @spoton/payments-team @spoton/security-leads @spoton/sre
+/.github/workflows/**    @spoton/sre @spoton/security-leads
+/infra/iam/**            @spoton/security-leads @spoton/sre
+
+# ---------- Tier 2 paths (business logic · non-PCI backend) ----------
+/api/orders/**           @spoton/backend-team
+/api/notifications/**    @spoton/backend-team
+/api/users/**            @spoton/backend-team
+/api/inventory/**        @spoton/backend-team
+/api/menu/**             @spoton/backend-team
+/api/reporting/**        @spoton/backend-team
+/api/reports/**          @spoton/backend-team
+
+# ---------- Tier 1 paths (frontend · non-payment UI) ----------
+/web/src/components/**   @spoton/frontend-team
+/web/src/pages/**        @spoton/frontend-team
+/web/src/hooks/**        @spoton/frontend-team
+
+# ---------- Tier 0 paths (docs · tests · styles) ----------
+# (no required reviewer · falls through to repo default)
+/docs/**
+/web/src/styles/**
+**/*_test.go

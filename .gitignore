@@ -1,0 +1,13 @@
+# Build artifacts
+*.test
+*.out
+bin/
+
+# IDE
+.idea/
+.vscode/
+.DS_Store
+
+# Local env
+.env
+.env.local

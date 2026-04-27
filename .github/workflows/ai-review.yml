@@ -1,0 +1,59 @@
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Tier classify · risk report · escalate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout reviewer code
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/spoton-ai-reviewer
+          path: reviewer
+          # Production: use a deploy key or GitHub App token. Demo: same-org public read.
+          token: ${{ secrets.REVIEWER_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: reviewer/package-lock.json
+
+      - name: Install reviewer deps
+        run: npm ci
+        working-directory: reviewer
+
+      - name: Run AI reviewer
+        env:
+          # GITHUB_TOKEN is auto-injected by Actions with pull-requests: write scope per the
+          # `permissions:` block above. The reviewer uses it to read PR files and post the review.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Anthropic API key for Haiku classifier + Sonnet/Opus specialists.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Optional: incoming webhook URL for T3 / T4 escalation. Reviewer skips Slack if absent.
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: npm run review
+        working-directory: reviewer
+
+      - name: Upload events.jsonl artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reviewer-events-${{ github.event.pull_request.number }}
+          path: reviewer/artifacts/events.jsonl
+          retention-days: 30
+          if-no-files-found: warn
