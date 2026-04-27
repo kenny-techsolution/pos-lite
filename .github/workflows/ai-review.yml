@@ -71,6 +71,38 @@ jobs:
         run: npm run review
         working-directory: reviewer
 
+      - name: Push event to dashboard (Cloudflare Worker)
+        # Sub-5s real-time path: append the event directly to the public
+        # dashboard's R2 bucket via the Worker's POST /events endpoint.
+        # Skips silently if CF_WORKER_URL or CF_WRITE_TOKEN aren't configured.
+        if: success()
+        env:
+          CF_WORKER_URL: ${{ secrets.CF_WORKER_URL }}
+          CF_WRITE_TOKEN: ${{ secrets.CF_WRITE_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CF_WORKER_URL:-}" ] || [ -z "${CF_WRITE_TOKEN:-}" ]; then
+            echo "CF_WORKER_URL or CF_WRITE_TOKEN not set — skipping dashboard push (artifact upload still runs)."
+            exit 0
+          fi
+          EVENT_FILE="reviewer/artifacts/events.jsonl"
+          if [ ! -s "$EVENT_FILE" ]; then
+            echo "No events.jsonl produced (LLM/auth misconfigured?) — skipping dashboard push."
+            exit 0
+          fi
+          COUNT=$(wc -l < "$EVENT_FILE" | tr -d ' ')
+          echo "Posting ${COUNT} event(s) to ${CF_WORKER_URL}/events…"
+          HTTP_CODE=$(curl -sS -o /tmp/cf-response.txt -w "%{http_code}" \
+            -X POST "${CF_WORKER_URL}/events" \
+            -H "Authorization: Bearer ${CF_WRITE_TOKEN}" \
+            -H "Content-Type: application/x-ndjson" \
+            --data-binary @"${EVENT_FILE}")
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "::warning::Dashboard push returned HTTP ${HTTP_CODE}: $(cat /tmp/cf-response.txt)"
+            exit 0  # don't fail the run on a downstream blip — backstop will catch
+          fi
+          echo "Dashboard updated · response: $(cat /tmp/cf-response.txt)"
+
       - name: Upload events.jsonl artifact
         if: always()
         uses: actions/upload-artifact@v4
