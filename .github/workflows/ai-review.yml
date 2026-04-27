@@ -51,8 +51,12 @@ jobs:
           MODEL_CLASSIFIER: ${{ vars.MODEL_CLASSIFIER }}
           MODEL_AGENT: ${{ vars.MODEL_AGENT }}
           MODEL_AGENT_OPUS: ${{ vars.MODEL_AGENT_OPUS }}
-          # Optional: incoming webhook URL for T3 / T4 escalation. Reviewer skips Slack if absent.
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          # Slack webhooks — set per channel for tier-aware routing.
+          # The aggregator picks `#payments-review` for payments/billing, `#security`
+          # for auth/crypto, and the URL fallback for everything else.
+          SLACK_WEBHOOK_PAYMENTS: ${{ secrets.SLACK_WEBHOOK_PAYMENTS }}
+          SLACK_WEBHOOK_SECURITY: ${{ secrets.SLACK_WEBHOOK_SECURITY }}
+          SLACK_WEBHOOK_URL:      ${{ secrets.SLACK_WEBHOOK_URL }}
         run: npm run review
         working-directory: reviewer
 
