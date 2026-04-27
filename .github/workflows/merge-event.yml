@@ -1,0 +1,49 @@
+name: PR merged · push to dashboard
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: merge-event-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  push:
+    if: github.event.pull_request.merged == true
+    name: Notify dashboard of merge
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: POST merge event to Cloudflare Worker
+        # Sub-second SSE fan-out to all connected dashboards.
+        # Skips silently if CF_WRITE_TOKEN isn't configured.
+        env:
+          CF_WORKER_URL: "https://ai-review-events.kenny-techsolution.workers.dev"
+          CF_WRITE_TOKEN: ${{ secrets.CF_WRITE_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          MERGED_BY: ${{ github.event.pull_request.merged_by.login }}
+          MERGED_AT: ${{ github.event.pull_request.merged_at }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          if [ -z "${CF_WRITE_TOKEN:-}" ]; then
+            echo "CF_WRITE_TOKEN not set — skipping merge-event push."
+            exit 0
+          fi
+          PAYLOAD=$(printf '{"type":"merged","pr_id":%s,"repo":"%s","merged_at":"%s","merged_by":"%s"}' \
+            "$PR_NUMBER" "$REPO" "$MERGED_AT" "$MERGED_BY")
+          echo "Posting merge event: $PAYLOAD"
+          HTTP_CODE=$(curl -sS -o /tmp/cf-response.txt -w "%{http_code}" \
+            -X POST "${CF_WORKER_URL}/events" \
+            -H "Authorization: Bearer ${CF_WRITE_TOKEN}" \
+            -H "Content-Type: application/x-ndjson" \
+            --data-raw "$PAYLOAD" || echo "000")
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "::warning::Dashboard push returned HTTP ${HTTP_CODE}: $(cat /tmp/cf-response.txt 2>/dev/null || true)"
+            exit 0
+          fi
+          echo "Dashboard updated · response: $(cat /tmp/cf-response.txt)"
