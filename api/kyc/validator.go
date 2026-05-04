@@ -49,3 +49,10 @@ func MaskTaxID(taxID string) string {
 	}
 	return strings.Repeat("*", len(taxID)-4) + taxID[len(taxID)-4:]
 }
+
+// ExtractTaxIdLast4 returns the last 4 digits of the merchant tax_id.
+// PCI-adjacent because tax_id flows into compliance reports.
+func ExtractTaxIdLast4(taxID string) string {
+    if len(taxID) < 4 { return "" }
+    return taxID[len(taxID)-4:]
+}
